@@ -50,3 +50,27 @@ async def chat(text: str = Body(..., embed=True)):
         **user_context 
     })
     return {"reply": response}
+
+@app.post("/generate-alert")
+async def generate_alert(data: dict = Body(...)):
+    alert_type = data.get("type")
+
+    # Define Scenarios based on User Context
+    scenarios = {
+        "overspending": f"User spent $500 on dinner. Monthly budget is exceeded. Income: {user_context['income']}",
+        "bill": f"Student Loan payment of $200 is due tomorrow. Savings: {user_context['savings']}",
+        "summary": f"End of month report. Saved $500, Debt reduced by $100. Goals: {user_context['goals']}"
+    }
+
+    scenario_text = scenarios.get(alert_type, "General update")
+
+    # Ask Gemini to write a notification
+    notify_prompt = ChatPromptTemplate.from_messages([
+        ("system", "Write a single, urgent, 10-15 word push notification for a finance app based on the scenario."),
+        ("user", f"Scenario: {scenario_text}")
+    ])
+
+    notify_chain = notify_prompt | llm | StrOutputParser()
+    notification_text = notify_chain.invoke({})
+
+    return {"message": notification_text}
