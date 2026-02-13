@@ -22,7 +22,7 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.7)
 
 # --- 1. SIMULATED DB ---
 user_context = {
-    "name": "Alex",
+    "name": "User",
     "income": 45000,
     "savings": 9000,
     "expenses": 36000,

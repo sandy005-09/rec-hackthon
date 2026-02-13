@@ -103,6 +103,17 @@
             color: white;
         }
 
+        /* Click Animation */
+        button,
+        .sidebar-link {
+            transition: transform 0.1s ease, background-color 0.2s;
+        }
+
+        button:active,
+        .sidebar-link:active {
+            transform: scale(0.95);
+        }
+
         .view-section {
             display: none;
         }
@@ -158,9 +169,9 @@
             <div class="flex items-center gap-3">
                 <div
                     class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                    A</div>
+                    U</div>
                 <div>
-                    <p class="text-sm font-semibold">Alex Doe</p>
+                    <p class="text-sm font-semibold">Workspace User</p>
                     <p class="text-xs text-gray-500">Premium Member</p>
                 </div>
             </div>
@@ -322,6 +333,7 @@
                             </div>
                         </div>
                     </div>
+
 
                     <div class="p-4 border-t border-gray-100 bg-gray-50">
                         <div class="flex gap-2">
@@ -661,7 +673,7 @@
                     body: JSON.stringify({
                         text: text,
                         context: {
-                            name: "Alex",
+                            name: "User",
                             income: currentIncome,
                             expenses: currentExpense,
                             savings: currentIncome - currentExpense,
