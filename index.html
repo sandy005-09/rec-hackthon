@@ -10,6 +10,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .scrollbar-hide::-webkit-scrollbar {
@@ -30,6 +31,74 @@
             background-color: #EEF2FF;
             color: #4F46E5;
             border-right: 3px solid #4F46E5;
+        }
+
+        /* Dark Mode Overrides */
+        body.dark-mode {
+            background-color: #111827;
+            color: #F3F4F6;
+        }
+
+        .dark-mode aside,
+        .dark-mode header,
+        .dark-mode .bg-white,
+        .dark-mode #chat-box {
+            background-color: #1F2937 !important;
+            border-color: #374151 !important;
+            color: #F3F4F6 !important;
+        }
+
+        .dark-mode .sidebar-link {
+            color: #9CA3AF;
+        }
+
+        .dark-mode .sidebar-link:hover {
+            background-color: #374151;
+            color: #F3F4F6;
+        }
+
+        .dark-mode .sidebar-link.active {
+            background-color: #312E81;
+            color: #A5B4FC;
+            border-right-color: #6366F1;
+        }
+
+        .dark-mode .text-gray-500,
+        .dark-mode .text-gray-400 {
+            color: #9CA3AF !important;
+        }
+
+        .dark-mode .bg-gray-50 {
+            background-color: #111827 !important;
+        }
+
+        .dark-mode .border-gray-100,
+        .dark-mode .border-gray-200 {
+            border-color: #374151 !important;
+        }
+
+        .dark-mode .bg-indigo-50,
+        .dark-mode .bg-blue-50,
+        .dark-mode .bg-green-50,
+        .dark-mode .bg-yellow-50,
+        .dark-mode .bg-red-50 {
+            background-color: rgba(79, 70, 229, 0.1) !important;
+        }
+
+        .dark-mode .text-gray-800,
+        .dark-mode .text-gray-700 {
+            color: #E5E7EB !important;
+        }
+
+        .dark-mode #user-input {
+            background-color: #374151 !important;
+            border-color: #4B5563 !important;
+            color: white !important;
+        }
+
+        .dark-mode .modal-content {
+            background-color: #1F2937 !important;
+            color: white;
         }
     </style>
 </head>
@@ -63,6 +132,16 @@
                     <span>⚙️</span> Settings
                 </a>
             </nav>
+
+            <div class="px-6 mt-8">
+                <button onclick="toggleDarkMode()"
+                    class="w-full flex items-center justify-between p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-all group"
+                    id="theme-toggle">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 group-hover:text-gray-600"
+                        id="theme-text">Dark Mode</span>
+                    <span id="theme-icon">🌙</span>
+                </button>
+            </div>
         </div>
 
         <div class="p-6 border-t border-gray-100">
@@ -254,7 +333,8 @@
 
     <!-- Modal for Manual Entry -->
     <div id="entry-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all scale-100">
+        <div
+            class="bg-white dark-mode:bg-gray-800 modal-content rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all scale-100">
             <h3 class="text-lg font-bold mb-4">Update Financials</h3>
 
             <div class="space-y-4">
@@ -294,6 +374,26 @@
         let currentExpense = 36000;
         const previousExpense = 32500; // Hardcoded for comparison
 
+        // Theme Handling
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeUI();
+        }
+
+        function updateThemeUI() {
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('theme-text').innerText = isDark ? 'Light Mode' : 'Dark Mode';
+            document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
+        }
+
+        // Apply theme on load
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            updateThemeUI();
+        }
+
         const chatBox = document.getElementById('chat-box');
 
         // Initial render
@@ -305,7 +405,7 @@
             modal.classList.toggle('flex');
         }
 
-        function updateFinancials() {
+        async function updateFinancials() {
             const inc = parseFloat(document.getElementById('input-income').value) || 0;
             const exp = parseFloat(document.getElementById('input-expense').value) || 0;
 
@@ -315,8 +415,30 @@
             updateUI();
             toggleModal();
 
-            // Notify via chat logic (Simulation)
+            // Notify via chat logic
             addMessage(`Updated financials. Income: ₹${currentIncome}, Expenses: ₹${currentExpense}`, 'system');
+
+            // Get AI Insight
+            await fetchAIInsight();
+        }
+
+        async function fetchAIInsight() {
+            const insightEl = document.getElementById('smart-insight');
+            insightEl.innerText = "Analyzing data...";
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/get-insight', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        context: { income: currentIncome, expenses: currentExpense }
+                    })
+                });
+                const data = await response.json();
+                insightEl.innerText = data.insight;
+            } catch (e) {
+                console.error("Failed to get AI insight", e);
+            }
         }
 
         function updateUI() {
@@ -364,8 +486,16 @@
                 const response = await fetch('http://127.0.0.1:8000/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // In a real app, we'd send the new context here
-                    body: JSON.stringify({ text: text })
+                    body: JSON.stringify({
+                        text: text,
+                        context: {
+                            name: "Alex",
+                            income: currentIncome,
+                            expenses: currentExpense,
+                            savings: currentIncome - currentExpense,
+                            goals: ["bike fund"]
+                        }
+                    })
                 });
                 const data = await response.json();
                 removeLoading(loadingId);
@@ -424,7 +554,10 @@
         function requestPermission() {
             if (Notification.permission !== "granted") Notification.requestPermission();
         }
-        window.onload = requestPermission;
+        window.onload = function () {
+            requestPermission();
+            fetchAIInsight();
+        }
 
         function sendNotification(title, message) {
             if (Notification.permission === "granted") {
@@ -438,7 +571,14 @@
                 const response = await fetch('http://127.0.0.1:8000/generate-alert', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: type })
+                    body: JSON.stringify({
+                        type: type,
+                        context: {
+                            income: currentIncome,
+                            expenses: currentExpense,
+                            savings: currentIncome - currentExpense
+                        }
+                    })
                 });
                 const data = await response.json();
                 sendNotification("Financial Alert", data.message);
