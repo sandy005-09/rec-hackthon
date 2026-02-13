@@ -20,14 +20,33 @@ app.add_middleware(
 # Setup Gemini
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.7)
 
-# Basic Chat Chain
+# --- 1. SIMULATED DB ---
+user_context = {
+    "name": "Alex",
+    "income": 65000,
+    "savings": 12000,
+    "debt": 5000,
+    "goals": ["buy a house", "pay off student loans"]
+}
+
+# --- 2. UPDATED PROMPT ---
+system_template = """
+You are a Financial Assistant. Use this data to answer:
+User: {name} | Income: ${income} | Savings: ${savings} | Debt: {debt} | Goals: {goals}
+Keep answers concise and helpful.
+"""
+
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful financial assistant."),
+    ("system", system_template),
     ("user", "{input}")
 ])
 chain = prompt | llm | StrOutputParser()
 
 @app.post("/chat")
 async def chat(text: str = Body(..., embed=True)):
-    response = chain.invoke({"input": text})
+    # Inject context into every message
+    response = chain.invoke({
+        "input": text,
+        **user_context 
+    })
     return {"reply": response}
