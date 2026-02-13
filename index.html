@@ -1,20 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GenAI Financial Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 p-8">
     <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-6">
         <h2 class="text-2xl font-bold mb-4 text-blue-600">💰 Financial Assistant</h2>
 
         <div id="chat-box" class="h-64 overflow-y-scroll border p-4 mb-4 rounded bg-gray-50 flex flex-col gap-2"></div>
 
+        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <h3 class="font-bold text-yellow-800 text-sm mb-2">🔔 Simulate Alerts (Bonus)</h3>
+            <div class="flex gap-2">
+                <button onclick="triggerAlert('overspending')"
+                    class="bg-red-500 text-white text-xs px-2 py-1 rounded">⚠️ Overspending</button>
+                <button onclick="triggerAlert('bill')" class="bg-blue-500 text-white text-xs px-2 py-1 rounded">📅 Bill
+                    Pay</button>
+                <button onclick="triggerAlert('summary')" class="bg-green-600 text-white text-xs px-2 py-1 rounded">📊
+                    Monthly Summary</button>
+            </div>
+            <button onclick="requestPermission()" class="mt-2 text-xs text-gray-500 underline">Enable
+                Permissions</button>
+        </div>
+
         <div class="flex gap-2">
-            <input type="text" id="user-input" class="border p-2 flex-grow rounded" placeholder="Ask financial question...">
-            <button onclick="sendMessage()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Send</button>
+            <input type="text" id="user-input" class="border p-2 flex-grow rounded"
+                placeholder="Ask financial question...">
+            <button onclick="sendMessage()"
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Send</button>
         </div>
     </div>
 
@@ -40,13 +58,47 @@
 
         function addMessage(text, sender) {
             const div = document.createElement('div');
-            div.className = sender === 'user' 
-                ? 'bg-blue-100 p-2 rounded self-end max-w-[80%]' 
+            div.className = sender === 'user'
+                ? 'bg-blue-100 p-2 rounded self-end max-w-[80%]'
                 : 'bg-gray-200 p-2 rounded self-start max-w-[80%]';
             div.innerText = text;
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
+
+        function requestPermission() {
+            if (!("Notification" in window)) alert("Not supported");
+            else Notification.requestPermission();
+        }
+
+        async function triggerAlert(type) {
+            if (Notification.permission !== "granted") {
+                alert("Please enable permissions first.");
+                return;
+            }
+
+            // 1. Get GenAI text
+            try {
+                const response = await fetch('http://127.0.0.1:8000/generate-alert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: type })
+                });
+                const data = await response.json();
+
+                // 2. Trigger Browser Notification
+                new Notification("Financial Alert", {
+                    body: data.message,
+                    icon: "https://cdn-icons-png.flaticon.com/512/2953/2953363.png"
+                });
+
+                // 3. Log to chat so judges see it clearly
+                addMessage(`[ALERT]: ${data.message}`, 'bot');
+            } catch (e) {
+                console.error(e);
+            }
+        }
     </script>
 </body>
+
 </html>
