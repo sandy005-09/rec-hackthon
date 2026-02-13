@@ -716,6 +716,9 @@
                         transactions: transactions // Send full history for Gemini to analyze
                     })
                 });
+
+                if (!response.ok) throw new Error("Server Error");
+
                 const data = await response.json();
                 if (insightEl) insightEl.innerText = data.insight;
 
@@ -723,6 +726,7 @@
                 if (reportText) reportText.innerText = data.insight;
             } catch (e) {
                 console.error("Failed to get AI insight", e);
+                if (insightEl) insightEl.innerText = "Check Python Server & API Key in .env";
             }
         }
 
@@ -778,12 +782,15 @@
                         }
                     })
                 });
+
+                if (!response.ok) throw new Error("AI Offline");
+
                 const data = await response.json();
                 removeLoading(loadingId);
                 addMessage(data.reply, 'bot');
             } catch (e) {
                 removeLoading(loadingId);
-                addMessage("I'm offline right now (Check Python server).", 'bot');
+                addMessage("⚠️ AI Connection Failed. Make sure your Python server is running and GOOGLE_API_KEY is added to the .env file.", 'bot');
             }
         }
 

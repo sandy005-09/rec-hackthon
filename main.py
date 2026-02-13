@@ -70,7 +70,7 @@ async def get_insight(data: dict = Body(...)):
         Analyze the user's income, total expenses, and specific transaction history.
         Identify patterns (e.g., high spending on food, subscription leaks, or rent burden).
         Provide a smart, professional, actionable suggestion in 1-2 powerful sentences.
-        Address the user as Alex."""),
+        Address the user as User."""),
         ("user", f"""
         Income: ₹{context.get('income')}
         Total Expenses: ₹{context.get('expenses')}
