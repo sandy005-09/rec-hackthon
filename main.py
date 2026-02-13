@@ -48,40 +48,76 @@ chain = prompt | llm | StrOutputParser()
 
 @app.post("/chat")
 async def chat(data: dict = Body(...)):
-    text = data.get("text")
+    text = data.get("text", "").lower()
     context = data.get("context", user_context)
+    transactions = context.get("transactions", [])
     
-    response = chain.invoke({
-        "input": text,
-        **context 
-    })
-    return {"reply": response}
+    # Check if Gemini is configured
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key or "your_key_here" in api_key:
+        # Fallback Logic: Rules-based bot
+        if "spending" in text or "expense" in text:
+            total_exp = context.get('expenses', 0)
+            return {"reply": f"Your total spending is currently ₹{total_exp:,}. You have {len(transactions)} logged transactions."}
+        if "income" in text:
+            return {"reply": f"Your monthly income is set to ₹{context.get('income', 0):,}."}
+        if "save" in text or "goal" in text:
+            savings = context.get('income', 0) - context.get('expenses', 0)
+            return {"reply": f"You are currently saving ₹{savings:,} this month. Keep it up!"}
+        return {"reply": "I'm SpendWise AI! Please add your Google API Key to the .env file for advanced AI analysis. I can still give basic info if you ask about 'spending' or 'income'."}
+
+    try:
+        response = chain.invoke({
+            "input": text,
+            **context 
+        })
+        return {"reply": response}
+    except Exception as e:
+        return {"reply": "Connection error. Using local rules: Your current expenses are ₹" + str(context.get('expenses'))}
 
 @app.post("/get-insight")
 async def get_insight(data: dict = Body(...)):
     context = data.get("context", user_context)
     transactions = data.get("transactions", [])
     
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key or "your_key_here" in api_key:
+        # Smart Fallback Suggestion
+        income = context.get('income', 1)
+        expenses = context.get('expenses', 0)
+        ratio = (expenses / income) * 100
+        
+        if ratio > 80:
+            msg = "Alert: You are spending over 80% of your income. Consider reviewing your 'Others' category."
+        elif ratio < 50:
+            msg = "Great job! You're saving over half your income. Invest your surplus to grow your net worth."
+        else:
+            msg = "Your spending is balanced. To reach your goals faster, try to reduce 'Food' costs by 10%."
+        return {"insight": msg}
+
     # Format transactions for the LLM
     t_summary = "\n".join([f"- {t['date']}: {t['desc']} ({t['cat']}) ₹{t['amount']}" for t in transactions])
     
-    insight_prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an expert Financial Companion. 
-        Analyze the user's income, total expenses, and specific transaction history.
-        Identify patterns (e.g., high spending on food, subscription leaks, or rent burden).
-        Provide a smart, professional, actionable suggestion in 1-2 powerful sentences.
-        Address the user as User."""),
-        ("user", f"""
-        Income: ₹{context.get('income')}
-        Total Expenses: ₹{context.get('expenses')}
-        Transaction History:
-        {t_summary if t_summary else "No transactions logged yet."}
-        """)
-    ])
-    
-    insight_chain = insight_prompt | llm | StrOutputParser()
-    insight = insight_chain.invoke({})
-    return {"insight": insight}
+    try:
+        insight_prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are SpendWise AI, an expert Financial Companion. 
+            Analyze the user's income, total expenses, and specific transaction history.
+            Identify patterns (e.g., high spending on food, subscription leaks, or rent burden).
+            Provide a smart, professional, actionable suggestion in 1-2 powerful sentences.
+            Address the user as User."""),
+            ("user", f"""
+            Income: ₹{context.get('income')}
+            Total Expenses: ₹{context.get('expenses')}
+            Transaction History:
+            {t_summary if t_summary else "No transactions logged yet."}
+            """)
+        ])
+        
+        insight_chain = insight_prompt | llm | StrOutputParser()
+        insight = insight_chain.invoke({})
+        return {"insight": insight}
+    except:
+        return {"insight": "Spending is stable. Keep tracking to see long-term trends."}
 
 @app.post("/generate-alert")
 async def generate_alert(data: dict = Body(...)):
