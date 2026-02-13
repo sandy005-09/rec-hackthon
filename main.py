@@ -34,8 +34,10 @@ user_context = {
 system_template = """
 You are a Financial Companion. Use this data to provide expert advice:
 User: {name} | Income: ₹{income} | Expenses: ₹{expenses} | Savings: ₹{savings} | Goals: {goals}
-Analyze the balance and provide professional, actionable advice.
-Keep answers concise.
+Transactions: {transactions}
+
+Analyze the user's spending patterns and provide professional, actionable advice based on both their balance and their specific transaction history.
+Keep answers concise and addressed to the user.
 """
 
 prompt = ChatPromptTemplate.from_messages([
@@ -58,10 +60,23 @@ async def chat(data: dict = Body(...)):
 @app.post("/get-insight")
 async def get_insight(data: dict = Body(...)):
     context = data.get("context", user_context)
+    transactions = data.get("transactions", [])
+    
+    # Format transactions for the LLM
+    t_summary = "\n".join([f"- {t['date']}: {t['desc']} ({t['cat']}) ₹{t['amount']}" for t in transactions])
     
     insight_prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a financial advisor. Look at the income vs expense ratio and provide a one-sentence high-impact insight."),
-        ("user", f"Income: {context.get('income')}, Expenses: {context.get('expenses')}")
+        ("system", """You are an expert Financial Companion. 
+        Analyze the user's income, total expenses, and specific transaction history.
+        Identify patterns (e.g., high spending on food, subscription leaks, or rent burden).
+        Provide a smart, professional, actionable suggestion in 1-2 powerful sentences.
+        Address the user as Alex."""),
+        ("user", f"""
+        Income: ₹{context.get('income')}
+        Total Expenses: ₹{context.get('expenses')}
+        Transaction History:
+        {t_summary if t_summary else "No transactions logged yet."}
+        """)
     ])
     
     insight_chain = insight_prompt | llm | StrOutputParser()

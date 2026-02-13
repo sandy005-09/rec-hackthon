@@ -597,19 +597,22 @@
 
         async function fetchAIInsight() {
             const insightEl = document.getElementById('smart-insight');
-            if (insightEl) insightEl.innerText = "Analyzing data...";
+            if (insightEl) insightEl.innerText = "Analyzing patterns...";
 
             try {
                 const response = await fetch('http://127.0.0.1:8000/get-insight', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        context: { income: currentIncome, expenses: currentExpense }
+                        context: { income: currentIncome, expenses: currentExpense },
+                        transactions: transactions // Send full history for Gemini to analyze
                     })
                 });
                 const data = await response.json();
                 if (insightEl) insightEl.innerText = data.insight;
-                document.getElementById('ai-report-text').innerText = data.insight + " Total savings are tracked at " + document.getElementById('display-savings').innerText;
+
+                const reportText = document.getElementById('ai-report-text');
+                if (reportText) reportText.innerText = data.insight;
             } catch (e) {
                 console.error("Failed to get AI insight", e);
             }
@@ -662,7 +665,8 @@
                             income: currentIncome,
                             expenses: currentExpense,
                             savings: currentIncome - currentExpense,
-                            goals: ["bike fund"]
+                            goals: ["bike fund"],
+                            transactions: transactions // Sync transactions with Chat
                         }
                     })
                 });
