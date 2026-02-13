@@ -42,8 +42,8 @@
                         class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
                         💰</div>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-800">Finance AI</h1>
-                        <p class="text-xs text-gray-500">Personal Assistant</p>
+                        <h1 class="text-xl font-bold text-gray-800">Finance Companion</h1>
+                        <p class="text-xs text-gray-500">Your Smart Money Partner</p>
                     </div>
                 </div>
 
@@ -110,7 +110,48 @@
             <div class="p-4 border-b border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span class="text-sm font-medium text-gray-600">Gemini Assistant Active</span>
+                    <span class="text-sm font-medium text-gray-600">Financial Health: Stable</span>
+                </div>
+            </div>
+
+            <!-- Content Area (Dashboard) -->
+            <div class="p-6 pb-0">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <p class="text-gray-500 text-sm">Income</p>
+                        <h2 class="text-xl font-semibold">₹45,000</h2>
+                    </div>
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <p class="text-gray-500 text-sm">Expenses</p>
+                        <h2 class="text-xl font-semibold text-red-500">₹36,000</h2>
+                    </div>
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <p class="text-gray-500 text-sm">Savings</p>
+                        <h2 class="text-xl font-semibold text-green-600">₹9,000</h2>
+                    </div>
+                    <div class="bg-white rounded-xl shadow p-4">
+                        <p class="text-gray-500 text-sm">Budget Used</p>
+                        <h2 class="text-xl font-semibold">80%</h2>
+                    </div>
+                </div>
+
+                <!-- Today's Insight -->
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+                    <h3 class="font-semibold mb-2">💡 Today’s Insight</h3>
+                    <p class="text-gray-700">
+                        You’re spending 80% of your income. Reducing food expenses slightly could increase your monthly
+                        savings by ₹1,200.
+                    </p>
+                </div>
+
+                <!-- Goal Tracker -->
+                <div class="bg-white rounded-xl shadow p-4 mb-6">
+                    <h3 class="font-semibold mb-3">🎯 Goal: Bike Fund</h3>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-green-500 h-3 rounded-full" style="width: 65%;"></div>
+                    </div>
+                    <p class="text-sm mt-2 text-gray-600">₹17,500 more to reach your goal.</p>
                 </div>
             </div>
 
@@ -121,8 +162,8 @@
                         class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 text-indigo-600 text-xs font-bold">
                         AI</div>
                     <div class="bg-gray-50 p-4 rounded-2xl rounded-tl-none max-w-[85%]">
-                        <p class="text-sm text-gray-700 leading-relaxed">Hello! I'm your AI Financial Assistant. I have
-                            access to your income, savings, and goals. How can I help you today?</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">How can I support your financial planning
+                            today?</p>
                     </div>
                 </div>
             </div>
@@ -227,15 +268,25 @@
         }
 
         function requestPermission() {
-            if (!("Notification" in window)) alert("Not supported");
-            else Notification.requestPermission();
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        }
+
+        function sendNotification(title, message) {
+            if (Notification.permission === "granted") {
+                new Notification(title, {
+                    body: message,
+                    icon: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                });
+            }
+        }
+
+        window.onload = function () {
+            requestPermission();
         }
 
         async function triggerAlert(type) {
-            if (Notification.permission !== "granted") {
-                alert("Please enable permissions first by clicking 'Enable Notifications'.");
-                return;
-            }
 
             // Visual feedback on button
             addMessage(`Generate ${type} alert...`, 'user');
@@ -252,10 +303,7 @@
                 removeLoading(loadingId);
 
                 // Browser Notification
-                new Notification("Financial Alert", {
-                    body: data.message,
-                    icon: "https://cdn-icons-png.flaticon.com/512/2953/2953363.png"
-                });
+                sendNotification("Financial Alert", data.message);
 
                 // Chat Log
                 const div = document.createElement('div');
